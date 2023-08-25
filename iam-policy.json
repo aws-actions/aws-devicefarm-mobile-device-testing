@@ -1,0 +1,59 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "devicefarm:ListProjects",
+        "devicefarm:ListVPCEConfigurations",
+        "devicefarm:ListJobs",
+        "devicefarm:ListSuites",
+        "devicefarm:ListTests",
+        "devicefarm:ListArtifacts"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "devicefarm:ListNetworkProfiles",
+        "devicefarm:ListDevicePools",
+        "devicefarm:ListUploads",
+        "devicefarm:CreateUpload"
+      ],
+      "Resource": "arn:aws:devicefarm:us-west-2:${Account}:project:${ProjectId}"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "devicefarm:ScheduleRun"
+      ],
+      "Resource": [
+        "arn:aws:devicefarm:us-west-2:${Account}:project:${ProjectId}",
+        "arn:aws:devicefarm:us-west-2::devicepool:*",
+        "arn:aws:devicefarm:us-west-2:${Account}:devicepool:*",
+        "arn:aws:devicefarm:us-west-2:${Account}:upload:*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": "devicefarm:GetRun",
+      "Resource": [
+        "arn:aws:devicefarm:us-west-2:${Account}:run:*",
+        "arn:aws:devicefarm:us-west-2:${Account}:project:${ProjectId}"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "devicefarm:GetUpload",
+        "devicefarm:ListUploads",
+        "devicefarm:DeleteUpload"
+      ],
+      "Resource": [
+        "arn:aws:devicefarm:us-west-2:${Account}:upload:*",
+        "arn:aws:devicefarm:us-west-2:${Account}:project:${ProjectId}"
+      ]
+    }
+  ]
+}

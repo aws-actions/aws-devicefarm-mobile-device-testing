@@ -1,0 +1,60 @@
+name: 'AWS Device Farm Automated Test GitHub Action'
+author: 'AWS Device Farm'
+description: 'GitHub action for automated testing on AWS Device Farm'
+branding:
+  icon: 'cloud'
+  color: 'orange'
+inputs:
+    run-name:
+      description: >-
+        The name to use for the name of the test run, must be unique within project.
+      require: true
+    run-settings-path:
+      description: >-
+        The path to the Run Settings json file.
+        The schema for the contents of this file can be found here:
+        https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-device-farm/Interface/ScheduleRunCommandInput/
+        NOTE: The name property in this file will be ignored if specified as the name of the test run is set by the run-name input.
+        The following fields support supplying an ARN or a Name.
+          - projectArn
+          - devicePoolArn
+          - networkProfileArn
+          - vpceConfigurationArns
+        The following fields support supplying an ARN or a path to the file to be found within the repository:
+          - appArn
+          - testPackageArn
+          - testSpecArn
+          - extraDataPackageArn
+          NOTE: If the file is not found in the repo the existing Project Uploads in Device Farm will be searched to one with matching type and name.
+      required: true
+    artifact-types:
+      description: >-
+        (Optional) A comma delimited list of Device Farm Artifacts that should be downloaded after the jobs completes.
+        https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-device-farm/Interface/ListArtifactsCommandOutput/
+        Note: To download all artifact types set the value to ALL. To download none skip this input.
+        They will be downloaded to a folder called `artifacts`. Please use the GitHub Action [upload-artifact](https://github.com/actions/upload-artifact) to store them.
+      required: false
+      default: ''
+    upload-poll-interval:
+      description: >-
+        (Optional) The duration (in milliseconds) between successive polls for the status of the file upload.
+      required: false
+      default: '1000'
+    run-poll-interval:
+      description: >-
+        (Optional) The duration (in milliseconds) between successive polls for the status of the test run.
+      required: false
+      default: '30000'
+outputs:
+  arn:
+    description: 'The ARN of the AWS Device Farm Automated Test Run'
+  status:
+    description: 'The status of the Automated Test Run'
+  result:
+    description: 'The result of the Automated Test Run'
+  artifact-folder:
+    description: 'The name of the folder that the test artifacts are downloaded into'
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
+  post: 'dist/cleanup/index.js'
