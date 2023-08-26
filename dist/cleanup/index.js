@@ -70,8 +70,6 @@ const INPUTS = {
 
 const OUTPUTS = {
     arn: "arn",
-    status: "status",
-    result: "result",
     artifactFolder: "artifact-folder",
 };
 

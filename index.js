@@ -204,6 +204,7 @@ async function uploadFile(projectArn, fileArn, fileType, testType, pollInterval)
 }
 
 async function scheduleRun(runSettings, pollInterval) {
+    core.startGroup("Automated Test run progress");
     const scheduleRunCommand = new ScheduleRunCommand(runSettings);
     core.info(`${runSettings.name} run is being scheduled...`);
     const scheduleRunRes = await deviceFarm.send(scheduleRunCommand);
@@ -215,8 +216,8 @@ async function scheduleRun(runSettings, pollInterval) {
         core.info(`${runSettings.name} run is ${runStatus.run.status}...`);
         await new Promise(r => setTimeout(r, pollInterval));
     }
-    core.info(`${runSettings.name} run is ${runStatus.run.status}`);
-    core.notice(countersToString(runStatus.run.counters));
+    core.info(`${runSettings.name} run is ${runStatus.run.status}.`);
+    core.endGroup();
     return runStatus.run
 }
 
@@ -230,7 +231,9 @@ async function listJobs(runArn) {
     for await (const page of listJobs) {
         jobs.push(...page.jobs);
     }
-    jobs.forEach(job => core.notice(`${job.name}: ${countersToString(job.counters)}`));
+    core.startGroup("Job results");
+    jobs.forEach(job => core.notice(`${job.name}: ${countersToString(job.counters)}.`));
+    core.endGroup();
     return jobs;
 }
 
@@ -264,7 +267,6 @@ async function getFolderLookups(runArn) {
     const jobs = await listJobs(runArn);
     const suites = (await Promise.all(jobs.map(job => listSuites(job.arn)))).flat();
     const tests = (await Promise.all(suites.map(suite => listTests(suite.arn)))).flat();
-
     const jobLookups = Object.fromEntries(jobs.map(job => [job.arn.split("/")[2], job.name]));
     const suiteLookups = Object.fromEntries(suites.map(suite => {
         const suiteSplit = suite.arn.split("/");
@@ -313,8 +315,8 @@ async function downloadArtifact(subFolderLookups, folderName, artifact) {
     const subFolder = subFolderLookups[arnSplit.slice(2, 5).join("/")]
     const artifactFolder = `./${folderName}/${subFolder}`;
     await fs.mkdir(artifactFolder, { recursive: true })
-    const response = await axios.get(artifact.url, { responseType: 'arraybuffer' });
-    const fileData = Buffer.from(response.data, 'binary');
+    const response = await axios.get(artifact.url, { responseType: "arraybuffer" });
+    const fileData = Buffer.from(response.data, "binary");
     // Use the 4th level ignored above in the filename to be certain the name is unique.
     const artifactPath = `${artifactFolder}/${arnSplit[5]}-${artifact.name}.${artifact.extension}`
     core.info(`Downloading ${artifactPath}...`)
@@ -352,14 +354,16 @@ async function run() {
             core.info(`VPCE Configuration ARNs being used: ${runSettings.configuration.vpceConfigurationArns}.`);
         }
         // Upload App File
-        const appProm = await uploadFile(runSettings.projectArn, runSettings.appArn, "APP", null, uploadPollInterval);
+        const appProm = uploadFile(runSettings.projectArn, runSettings.appArn, "APP", null, uploadPollInterval);
         // Upload Test Package File
         const tpkProm = uploadFile(runSettings.projectArn, runSettings.test.testPackageArn, "TEST_PACKAGE", runSettings.test.type, uploadPollInterval);
         // Upload Test Specification File
         const tspProm = uploadFile(runSettings.projectArn, runSettings.test.testSpecArn, "TEST_SPEC", runSettings.test.type, uploadPollInterval);
         // Upload External Data File
         const extProm = uploadFile(runSettings.projectArn, runSettings.configuration.extraDataPackageArn, "EXTERNAL_DATA", null, uploadPollInterval);
+        core.startGroup("Uploading files");
         const [appArn, tpkArn, tspArn, extArn] = await Promise.all([appProm, tpkProm, tspProm, extProm]);
+        core.endGroup();
         // Set App Upload Arn
         runSettings.appArn = appArn;
         // Set Test Package Upload Arn
@@ -381,8 +385,11 @@ async function run() {
         // Set Run Name
         runSettings.name = runName;
         const testRun = await scheduleRun(runSettings, runPollInterval);
-        core.info(`${runName} run result is ${testRun.result}`);
+        core.startGroup("Automated Test run details");
+        core.notice(`${runName} run result is ${testRun.result}.`);
         core.notice(`https://${process.env.AWS_REGION}.console.aws.amazon.com/devicefarm/home#/mobile/projects/${testRun.arn.split(":")[6].replace("/", "/runs/")}`)
+        core.notice(`${countersToString(testRun.counters)}.`);
+        core.endGroup();
         const artifactFolder = testRun.arn.split(":")[6].split("/")[1]
         core.saveState("artifactFolder", artifactFolder);
         /* istanbul ignore else */
@@ -391,7 +398,9 @@ async function run() {
             /* istanbul ignore else */
             if (desiredArtifacts.length > 0) {
                 const folderLookups = await getFolderLookups(testRun.arn);
+                core.startGroup("Download test artifacts");
                 await Promise.all(desiredArtifacts.map(desiredArtifact => downloadArtifact(folderLookups, artifactFolder, desiredArtifact)));
+                core.endGroup();
             }
         }
         core.setOutput(OUTPUTS.arn, testRun.arn);
