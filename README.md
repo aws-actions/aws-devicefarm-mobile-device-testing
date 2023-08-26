@@ -223,7 +223,7 @@ This action requires the following minimum set of permissions to run an Automate
 
 - `run-settings-path`
 
-  As mentioned above, this property sets the path to the json run settings file. Withing the schema for this file there a number of fields that refer to an existing resource ARN within the AWS Account.
+  As mentioned above, this property sets the path to the json run settings file. Within the schema for this file there a number of fields that refer to an existing resource ARN within the AWS Account.
 
   This Action has enhanced these fields to be multi-use so as to be more flexible when used within a GitHub Action. There are 2 different types of ARN fields that behave slightly differently:
 
