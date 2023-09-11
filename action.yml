@@ -1,6 +1,6 @@
-name: 'AWS Device Farm Automated Test GitHub Action'
+name: 'AWS Device Farm Mobile Device Testing GitHub Action'
 author: 'AWS Device Farm'
-description: 'GitHub action for automated testing on AWS Device Farm'
+description: 'GitHub action for automated mobile device testing on AWS Device Farm'
 branding:
   icon: 'cloud'
   color: 'orange'
