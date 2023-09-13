@@ -32,7 +32,7 @@ inputs:
         (Optional) A comma delimited list of Device Farm Artifacts that should be downloaded after the jobs completes.
         https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-device-farm/Interface/ListArtifactsCommandOutput/
         Note: To download all artifact types set the value to ALL. To download none skip this input.
-        They will be downloaded to a folder called `artifacts`. Please use the GitHub Action [upload-artifact](https://github.com/actions/upload-artifact) to store them.
+        They will be downloaded to a folder. The name of the folder can be found by referencing the output with name artifact-folder. Please use the GitHub Action [upload-artifact](https://github.com/actions/upload-artifact) to store them.
       required: false
       default: ''
     upload-poll-interval:
