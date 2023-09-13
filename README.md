@@ -1,6 +1,6 @@
-# AWS Device Farm Automated Test for GitHub Actions
+# AWS Device Farm Mobile Device Testing for GitHub Actions
 
-Runs an Automated Test on AWS Device Farm.
+Runs a Mobile Device Automated Test on AWS Device Farm.
 
 This GitHub Action allows you to run [automated app testing](https://docs.aws.amazon.com/devicefarm/latest/developerguide/welcome.html#automated-test-intro) on [AWS Device Farm](https://aws.amazon.com/device-farm/).
 For example, testing new versions of code being committed to a branch to ensure the App works as desired before proceeding with the next step in the release cycle.
@@ -9,7 +9,7 @@ For example, testing new versions of code being committed to a branch to ensure 
 
 <!-- toc -->
 
-- [AWS Device Farm Automated Test for GitHub Actions](#aws-device-farm-automated-test-for-github-actions)
+- [AWS Device Farm Mobile Device Testing for GitHub Actions](#aws-device-farm-mobile-device-testing-for-github-actions)
   - [Table of Contents](#table-of-contents)
   - [Input options](#input-options)
   - [Output options](#output-options)
