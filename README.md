@@ -74,7 +74,7 @@ For example, testing new versions of code being committed to a branch to ensure 
 ```yaml
       - name: Schedule Device Farm Automated Test
         id: run-test
-        uses: aws-actions/aws-devicefarm-automated-test@v1
+        uses: aws-actions/aws-devicefarm-mobile-device-testing@v1
         with:
           run-name: GitHubAction-${{ github.workflow }}_${{ github.run_id }}_${{ github.run_attempt }}
           run-settings-path: run-settings.json
@@ -92,7 +92,7 @@ For example, testing new versions of code being committed to a branch to ensure 
 ```yaml
       - name: Schedule Device Farm Automated Test
         id: run-test
-        uses: aws-actions/aws-devicefarm-automated-test@v1
+        uses: aws-actions/aws-devicefarm-mobile-device-testing@v1
         with:
           run-name: GitHubAction-${{ github.workflow }}_${{ github.run_id }}_${{ github.run_attempt }}
           run-settings-path: run-settings.json
@@ -110,7 +110,7 @@ For example, testing new versions of code being committed to a branch to ensure 
 ```yaml
       - name: Schedule Device Farm Automated Test
         id: run-test
-        uses: aws-actions/aws-devicefarm-automated-test@v1
+        uses: aws-actions/aws-devicefarm-mobile-device-testing@v1
         with:
           run-name: GitHubAction-${{ github.workflow }}_${{ github.run_id }}_${{ github.run_attempt }}
           run-settings-path: run-settings.json
@@ -133,7 +133,7 @@ This action relies on the [default behaviour of the AWS SDK for Javascript](http
 
       - name: Schedule Device Farm Automated Test
         id: run-test
-        uses: aws-actions/aws-devicefarm-automated-test@v1
+        uses: aws-actions/aws-devicefarm-mobile-device-testing@v1
         with:
           run-name: GitHubAction-${{ github.workflow }}_${{ github.run_id }}_${{ github.run_attempt }}
           run-settings-path: run-settings.json

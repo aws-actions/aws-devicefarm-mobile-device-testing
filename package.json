@@ -1,5 +1,5 @@
 {
-  "name": "aws-device-farm-automated-test",
+  "name": "aws-devicefarm-mobile-device-testing",
   "version": "1.0.0",
   "description": "Carries out an Automated Test on AWS Device Farm",
   "main": "index.js",
