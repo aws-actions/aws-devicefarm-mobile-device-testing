@@ -243,35 +243,6 @@ describe("Run", () => {
                     counters: {total: 1, passed: 1, warned: 0, errored: 0, failed: 0, skipped: 0, stopped: 0},
                 }
             })
-            .on(ListArtifactsCommand, {
-                arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id",
-                type: RUN.ARTIFACT_TYPES[0]
-            })
-            .resolvesOnce({
-                artifacts: []
-            })
-            .on(ListArtifactsCommand, {
-                arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id",
-                type: RUN.ARTIFACT_TYPES[1]
-            })
-            .resolvesOnce({
-                artifacts: [
-                    {
-                        arn: "arn:aws:devicefarm:us-west-2:account-id:artifact:project-id/run-id/fake-job-id/fake-suite-id/fake-test-id/fake-asset-id",
-                        name: "fake-name",
-                        type: "VIDEO",
-                        extension: "fake-extension",
-                        url: "fake-url"
-                    }
-                ]
-            })
-            .on(ListArtifactsCommand, {
-                arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id",
-                type: RUN.ARTIFACT_TYPES[2]
-            })
-            .resolvesOnce({
-                artifacts: []
-            })
             .on(ListJobsCommand, {
                 arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id"
             })
@@ -306,6 +277,24 @@ describe("Run", () => {
                     }
                 ]
             });
+        RUN.ARTIFACT_TYPES.forEach(type => {
+            mockDeviceFarm
+                .on(ListArtifactsCommand, {
+                    arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id",
+                    type: type
+                })
+                .resolvesOnce({
+                    artifacts: [
+                        {
+                            arn: `arn:aws:devicefarm:us-west-2:account-id:artifact:project-id/run-id/fake-job-id/fake-suite-id/fake-test-id/fake-asset-${type}-id`,
+                            name: `fake-${type}-name`,
+                            type: type,
+                            extension: `fake-${type}-extension`,
+                            url: `fake-${type}-url`
+                        }
+                    ]
+                });
+        });
         axios.get.mockResolvedValue(Promise.resolve({data: ""}));
 
         await run();
@@ -345,14 +334,15 @@ describe("Run", () => {
             },
         });
         expect(mockDeviceFarm).toHaveReceivedCommandWith(GetRunCommand, {arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id"});
-        expect(mockDeviceFarm).toHaveReceivedCommandWith(ListArtifactsCommand, {arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id", type: "SCREENSHOT"});
-        expect(mockDeviceFarm).toHaveReceivedCommandWith(ListArtifactsCommand, {arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id", type: "FILE"});
-        expect(mockDeviceFarm).toHaveReceivedCommandWith(ListArtifactsCommand, {arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id", type: "LOG"});
         expect(mockDeviceFarm).toHaveReceivedCommandWith(ListJobsCommand, {arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id"})
         expect(mockDeviceFarm).toHaveReceivedCommandWith(ListSuitesCommand, {arn: "arn:aws:devicefarm:us-west-2:account-id:job:project-id/run-id/fake-job-id"})
         expect(mockDeviceFarm).toHaveReceivedCommandWith(ListTestsCommand, {arn: "arn:aws:devicefarm:us-west-2:account-id:job:project-id/run-id/fake-job-id/fake-suite-id"})
-        expect(axios.get).toHaveBeenCalledWith("fake-url", { "responseType": "arraybuffer" });
-        expect(fs.writeFile).toBeCalledWith("./run-id/fake-job/fake-suite/fake-test/fake-asset-id-fake-name.fake-extension", Buffer.from(""));
+        expect(mockDeviceFarm).toHaveReceivedCommandTimes(ListArtifactsCommand, RUN.ARTIFACT_TYPES.length);
+        RUN.ARTIFACT_TYPES.forEach(type => {
+            expect(mockDeviceFarm).toHaveReceivedCommandWith(ListArtifactsCommand, {arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id", type: type});
+            expect(axios.get).toHaveBeenCalledWith(`fake-${type}-url`, { "responseType": "arraybuffer" });
+            expect(fs.writeFile).toBeCalledWith(`./run-id/fake-job/fake-suite/fake-test/fake-asset-${type}-id-fake-${type}-name.fake-${type}-extension`, Buffer.from(""));
+        });
         expect(core.setFailed).toHaveBeenCalledTimes(0);
     });
 
@@ -532,9 +522,6 @@ describe("Run", () => {
                         name: "Test"
                     }
                 ]
-            })
-            .on(ListDevicePoolsCommand, {
-                arn: "fake-project-arn"
             });
 
         await run();
