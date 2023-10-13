@@ -325,14 +325,13 @@ async function downloadArtifact(subFolderLookups, folderName, artifact) {
 
 async function run() {
     // Get inputs
-    const runName = core.getInput(INPUTS.runName, { required: true });
-    const runSettingsPath = core.getInput(INPUTS.runSettingsPath, { required: true });
+    const runSettingsJson = core.getInput(INPUTS.runSettingsJson, { required: true });
     const artifactTypes = core.getInput(INPUTS.artifactTypes, { required: false }).split(",").map(v => v.trim()).filter(v => v !== "");
     const uploadPollInterval = parseInt(core.getInput(INPUTS.uploadPollInterval, { required: false }));
     const runPollInterval = parseInt(core.getInput(INPUTS.runPollInterval, { required: false }));
     try {
         // Read Run Settings in from Json file
-        const runSettings = JSON.parse(await fs.readFile(runSettingsPath));
+        const runSettings = JSON.parse(runSettingsJson);
         // Set Project Arn
         runSettings.projectArn = await getProjectArn(runSettings.projectArn);
         core.saveState("projectArn", runSettings.projectArn);
@@ -378,15 +377,9 @@ async function run() {
         if (runSettings.configuration.extraDataPackageArn) {
             runSettings.configuration.extraDataPackageArn = extArn;
         }
-        // Warn of overriden Run Name
-        if (runSettings.name) {
-            core.warning(`Test run name found in specification with value of: ${runSettings.name}, being replaced with action input value of: ${runName}.`);
-        }
-        // Set Run Name
-        runSettings.name = runName;
         const testRun = await scheduleRun(runSettings, runPollInterval);
         core.startGroup("Automated Test run details");
-        core.notice(`${runName} run result is ${testRun.result}.`);
+        core.notice(`${runSettings.name} run result is ${testRun.result}.`);
         core.notice(`https://${process.env.AWS_REGION}.console.aws.amazon.com/devicefarm/home#/mobile/projects/${testRun.arn.split(":")[6].replace("/", "/runs/")}`)
         core.notice(`${countersToString(testRun.counters)}.`);
         core.endGroup();
@@ -416,20 +409,6 @@ async function run() {
 }
 
 module.exports = {
-    getProjectArn,
-    getDevicePoolArn,
-    getNetworkProfileArn,
-    listVPCEConfigurations,
-    getVPCEConfigurationArns,
-    getUploadArn,
-    uploadFile,
-    scheduleRun,
-    listJobs,
-    listSuites,
-    listTests,
-    getFolderLookups,
-    getDesiredArtifacts,
-    downloadArtifact,
     run,
 };
 

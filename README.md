@@ -31,8 +31,7 @@ For example, testing new versions of code being committed to a branch to ensure 
 
 ## Input options
 
-- run-name: **REQUIRED** The name to assign to the Device Farm Automated Test Run
-- run-settings-path: **REQUIRED** The path to the json file containing the run parameters. The schema for this file can be found [here](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-device-farm/Interface/ScheduleRunCommandInput/) and here is a [sample file](./run-settings.sample) to get started with.
+- run-settings-json: **REQUIRED** The json string specifying the run parameters. The schema for this json can be found [here](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-device-farm/Interface/ScheduleRunCommandInput/).
 - artifact-types: **OPTIONAL** A comma-delimited list of artifacts to be downloaded after the run completes. The valid values can be found [here](https://docs.aws.amazon.com/devicefarm/latest/APIReference/API_Artifact.html#devicefarm-Type-Artifact-type). No artifacts will be downloaded if this property is not supplied.
 - upload-poll-interval: **OPTIONAL** The interval (in milliseconds) between each poll to check if a file upload is complete. Defaults to 1000 (1 second).
 - run-poll-interval: **OPTIONAL** The interval (in milliseconds) between each poll to check if the test run is complete. Defaults to 30000 (30 seconds).
@@ -74,10 +73,20 @@ For example, testing new versions of code being committed to a branch to ensure 
 ```yaml
       - name: Schedule Device Farm Automated Test
         id: run-test
-        uses: aws-actions/aws-devicefarm-mobile-device-testing@v1
+        uses: aws-actions/aws-devicefarm-mobile-device-testing@v2.0
         with:
-          run-name: GitHubAction-${{ github.workflow }}_${{ github.run_id }}_${{ github.run_attempt }}
-          run-settings-path: run-settings.json
+          run-settings-json: |
+            {
+              "name": "GitHubAction-${{ github.workflow }}_${{ github.run_id }}_${{ github.run_attempt }}",
+              "projectArn": "Test",
+              "appArn": "aws-devicefarm-sample-app.apk",
+              "devicePoolArn": "Top Devices",
+              "test": {
+                "type": "APPIUM_NODE",
+                "testPackageArn": "MySampleAndroidTests.zip",
+                "testSpecArn": "webdriverio_spec_file.yml"
+              }
+            }
           artifact-types: ALL
 
       - uses: actions/upload-artifact@v3
@@ -92,10 +101,20 @@ For example, testing new versions of code being committed to a branch to ensure 
 ```yaml
       - name: Schedule Device Farm Automated Test
         id: run-test
-        uses: aws-actions/aws-devicefarm-mobile-device-testing@v1
+        uses: aws-actions/aws-devicefarm-mobile-device-testing@v2.0
         with:
-          run-name: GitHubAction-${{ github.workflow }}_${{ github.run_id }}_${{ github.run_attempt }}
-          run-settings-path: run-settings.json
+          run-settings-json: |
+            {
+              "name": "GitHubAction-${{ github.workflow }}_${{ github.run_id }}_${{ github.run_attempt }}",
+              "projectArn": "Test",
+              "appArn": "aws-devicefarm-sample-app.apk",
+              "devicePoolArn": "Top Devices",
+              "test": {
+                "type": "APPIUM_NODE",
+                "testPackageArn": "MySampleAndroidTests.zip",
+                "testSpecArn": "webdriverio_spec_file.yml"
+              }
+            }
           artifact-types: VIDEO,SCREENSHOT
 
       - uses: actions/upload-artifact@v3
@@ -110,17 +129,27 @@ For example, testing new versions of code being committed to a branch to ensure 
 ```yaml
       - name: Schedule Device Farm Automated Test
         id: run-test
-        uses: aws-actions/aws-devicefarm-mobile-device-testing@v1
+        uses: aws-actions/aws-devicefarm-mobile-device-testing@v2.0
         with:
-          run-name: GitHubAction-${{ github.workflow }}_${{ github.run_id }}_${{ github.run_attempt }}
-          run-settings-path: run-settings.json
+          run-settings-json: |
+            {
+              "name": "GitHubAction-${{ github.workflow }}_${{ github.run_id }}_${{ github.run_attempt }}",
+              "projectArn": "Test",
+              "appArn": "aws-devicefarm-sample-app.apk",
+              "devicePoolArn": "Top Devices",
+              "test": {
+                "type": "APPIUM_NODE",
+                "testPackageArn": "MySampleAndroidTests.zip",
+                "testSpecArn": "webdriverio_spec_file.yml"
+              }
+            }
 ```
 
 ## Credentials
 
 ### AWS Credentials
 
-This action relies on the [default behaviour of the AWS SDK for Javascript](https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-credentials-node.html) to determine AWS credentials and region.  Use [the `aws-actions/configure-aws-credentials` action](https://github.com/aws-actions/configure-aws-credentials) to configure the GitHub Actions environment with a role using GitHub's OIDC provider and your desired region.
+This action relies on the [default behaviour of the AWS SDK for JavaScript](https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-credentials-node.html) to determine AWS credentials and region.  Use [the `aws-actions/configure-aws-credentials` action](https://github.com/aws-actions/configure-aws-credentials) to configure the GitHub Actions environment with a role using GitHub's OIDC provider and your desired region.
 
 > **_NOTE:_**  AWS Device Farm is available in `us-west-2` region only. Therefore, it is important to specify `us-west-2` as the value of the `aws-region` property in the `configure-aws-credentials` step.
 
@@ -133,10 +162,20 @@ This action relies on the [default behaviour of the AWS SDK for Javascript](http
 
       - name: Schedule Device Farm Automated Test
         id: run-test
-        uses: aws-actions/aws-devicefarm-mobile-device-testing@v1
+        uses: aws-actions/aws-devicefarm-mobile-device-testing@v2.0
         with:
-          run-name: GitHubAction-${{ github.workflow }}_${{ github.run_id }}_${{ github.run_attempt }}
-          run-settings-path: run-settings.json
+          run-settings-json: |
+            {
+              "name": "GitHubAction-${{ github.workflow }}_${{ github.run_id }}_${{ github.run_attempt }}",
+              "projectArn": "Test",
+              "appArn": "aws-devicefarm-sample-app.apk",
+              "devicePoolArn": "Top Devices",
+              "test": {
+                "type": "APPIUM_NODE",
+                "testPackageArn": "MySampleAndroidTests.zip",
+                "testSpecArn": "webdriverio_spec_file.yml"
+              }
+            }
 ```
 
 We recommend following [Amazon IAM best practices](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html) when using AWS services in GitHub Actions workflows, including:
@@ -221,9 +260,9 @@ This action requires the following minimum set of permissions to run an Automate
 
 ### Inputs
 
-- `run-settings-path`
+- `run-settings-json`
 
-  As mentioned above, this property sets the path to the json run settings file. Within the schema for this file there a number of fields that refer to an existing resource ARN within the AWS Account.
+  As mentioned above, this property specifies the run settings. Within the schema for this json there a number of fields that refer to an existing resource ARN within the AWS Account.
 
   This Action has enhanced these fields to be multi-use so as to be more flexible when used within a GitHub Action. There are 2 different types of ARN fields that behave slightly differently:
 
