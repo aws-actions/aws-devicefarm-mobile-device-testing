@@ -10,6 +10,7 @@ const OUTPUTS = {
     status: "status",
     result: "result",
     artifactFolder: "artifact-folder",
+    consoleUrl: "console-url",
 };
 
 const UPLOAD = {

@@ -380,7 +380,9 @@ async function run() {
         const testRun = await scheduleRun(runSettings, runPollInterval);
         core.startGroup("Automated Test run details");
         core.notice(`${runSettings.name} run result is ${testRun.result}.`);
-        core.notice(`https://${process.env.AWS_REGION}.console.aws.amazon.com/devicefarm/home#/mobile/projects/${testRun.arn.split(":")[6].replace("/", "/runs/")}`)
+        const consoleUrl = `https://${process.env.AWS_REGION}.console.aws.amazon.com/devicefarm/home#/mobile/projects/${testRun.arn.split(":")[6].replace("/", "/runs/")}`;
+        core.notice(consoleUrl)
+        core.setOutput(OUTPUTS.consoleUrl, consoleUrl);
         core.notice(`${countersToString(testRun.counters)}.`);
         core.endGroup();
         const artifactFolder = testRun.arn.split(":")[6].split("/")[1]

@@ -49,6 +49,8 @@ outputs:
     description: 'The result of the Automated Test Run'
   artifact-folder:
     description: 'The name of the folder that the test artifacts are downloaded into'
+  console-url:
+    description: 'The AWS Console URL for the test run'
 runs:
   using: 'node16'
   main: 'dist/index.js'

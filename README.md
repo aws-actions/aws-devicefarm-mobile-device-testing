@@ -42,6 +42,7 @@ For example, testing new versions of code being committed to a branch to ensure 
 - status: The status of the Automated Test Run. Check [here](https://docs.aws.amazon.com/devicefarm/latest/APIReference/API_Run.html) for possible values
 - result: The result of the Automated Test Run. Check [here](https://docs.aws.amazon.com/devicefarm/latest/APIReference/API_Run.html) for possible values
 - artifact-folder: The name of the folder where the artifacts are downloaded. Required if calling [upload-artifact](https://github.com/actions/upload-artifact) in a following step.
+- console-url: The URL link to the AWs Console showing the Test run details.
 
 ## Examples of Usage
 
