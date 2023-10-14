@@ -33,7 +33,15 @@ jest.mock("@actions/github", () => ({
 }));
 
 function mockGetInput(requestResponse) {
+    const defaults = {
+        "artifact-types": "",
+        "upload-poll-interval": "1000",
+        "run-poll-interval": "30000"
+    }
     return function (name, options) { // eslint-disable-line no-unused-vars
+        if (!requestResponse[name]) {
+            return defaults[name]
+        }
         return requestResponse[name]
     }
 }
@@ -53,8 +61,24 @@ describe("Run", () => {
 
     it("should lookups arns, upload files and download ALL artifacts (ANDROID)", async () => {
         const INPUTS = {
-            "run-name": "TEST RUN",
-            "run-settings-path": "run-settings.json",
+            "run-settings-json": `
+                {
+                    "name": "TEST RUN",
+                    "projectArn": "Test",
+                    "appArn": "app_resources/aws-devicefarm-sample-app.apk",
+                    "devicePoolArn": "Top Devices",
+                    "test": {
+                        "type": "APPIUM_NODE",
+                        "testPackageArn": "app_resources/MySampleAndroidTests.zip",
+                        "testSpecArn": "app_resources/webdriverio_spec_file.yml"
+                    },
+                    "configuration": {
+                        "extraDataPackageArn": "app_resources/external.zip",
+                        "networkProfileArn": "Network",
+                        "vpceConfigurationArns": ["VPCE"]
+                    }
+                }
+            `,
             "artifact-types": "ALL",
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
@@ -66,24 +90,7 @@ describe("Run", () => {
             "app_resources/webdriverio_spec_file.yml": "",
             "app_resources/external.zip": "",
         });
-        const RUN_SETTINGS = {
-            name: "replace-this",
-            projectArn: "Test",
-            appArn: "app_resources/aws-devicefarm-sample-app.apk",
-            devicePoolArn: "Top Devices",
-            test: {
-                type: "APPIUM_NODE",
-                testPackageArn: "app_resources/MySampleAndroidTests.zip",
-                testSpecArn: "app_resources/webdriverio_spec_file.yml"
-            },
-            configuration: {
-                extraDataPackageArn: "app_resources/external.zip",
-                networkProfileArn: "Network",
-                vpceConfigurationArns: ["VPCE"]
-            }
-        }
-        fs.readFile.mockResolvedValueOnce(JSON.stringify(RUN_SETTINGS)); // run-settings file
-        fs.readFile.mockResolvedValue(""); // all other files
+        fs.readFile.mockResolvedValue("");
         mockDeviceFarm
             .on(ListProjectsCommand, {})
             .resolvesOnce({
@@ -299,7 +306,6 @@ describe("Run", () => {
 
         await run();
 
-        expect(fs.readFile).toBeCalledWith(INPUTS["run-settings-path"]);
         expect(mockDeviceFarm).toHaveReceivedCommandWith(ListProjectsCommand, {});
         expect(core.saveState).toHaveBeenCalledWith("projectArn", "fake-project-arn");
         expect(mockDeviceFarm).toHaveReceivedCommandWith(ListDevicePoolsCommand, {arn: "fake-project-arn"});
@@ -348,27 +354,26 @@ describe("Run", () => {
 
     it("should use supplied arns and download VIDEO artifacts with failed result", async () => {
         const INPUTS = {
-            "run-name": "TEST RUN",
-            "run-settings-path": "run-settings.json",
+            "run-settings-json": `
+                {
+                    "name": "TEST RUN",
+                    "projectArn": "arn:fake-project-arn",
+                    "appArn": "arn:fake-app-arn",
+                    "devicePoolArn": "arn:fake-devicepool-arn",
+                    "test": {
+                        "type": "APPIUM_NODE"
+                    },
+                    "configuration": {
+                        "networkProfileArn": "arn:fake-networkProfiles-arn",
+                        "vpceConfigurationArns": ["arn:fake-vpceConfiguration-arn"]
+                    }
+                }
+            `,
             "artifact-types": "VIDEO",
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
         core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
-        const RUN_SETTINGS = {
-            name: "replace-this",
-            projectArn: "arn:fake-project-arn",
-            appArn: "arn:fake-app-arn",
-            devicePoolArn: "arn:fake-devicepool-arn",
-            test: {
-                type: "APPIUM_NODE"
-            },
-            configuration: {
-                networkProfileArn: "arn:fake-networkProfiles-arn",
-                vpceConfigurationArns: ["arn:fake-vpceConfiguration-arn"]
-            }
-        }
-        fs.readFile.mockResolvedValueOnce(JSON.stringify(RUN_SETTINGS)); // run-settings file
         mockDeviceFarm
             .on(ListVPCEConfigurationsCommand)
             .resolvesOnce({
@@ -502,17 +507,16 @@ describe("Run", () => {
 
     it("should fail if project name not found", async () => {
         const INPUTS = {
-            "run-name": "TEST RUN",
-            "run-settings-path": "run-settings.json",
+            "run-settings-json": `
+                {
+                    "projectArn": "Bad Name"
+                }
+            `,
             "artifact-types": "ALL",
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
         core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
-        const RUN_SETTINGS = {
-            projectArn: "Bad Name"
-        }
-        fs.readFile.mockResolvedValueOnce(JSON.stringify(RUN_SETTINGS)); // run-settings file
         mockDeviceFarm
             .on(ListProjectsCommand, {})
             .resolvesOnce({
@@ -532,18 +536,17 @@ describe("Run", () => {
 
     it("should fail if device pool name not found", async () => {
         const INPUTS = {
-            "run-name": "TEST RUN",
-            "run-settings-path": "run-settings.json",
+            "run-settings-json": `
+                {
+                    "projectArn": "arn:fake-project-arn",
+                    "devicePoolArn": "Bad Name"
+                }
+            `,
             "artifact-types": "ALL",
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
         core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
-        const RUN_SETTINGS = {
-            projectArn: "arn:fake-project-arn",
-            devicePoolArn: "Bad Name"
-        }
-        fs.readFile.mockResolvedValueOnce(JSON.stringify(RUN_SETTINGS)); // run-settings file
         mockDeviceFarm
             .on(ListDevicePoolsCommand, {
                 arn: "arn:fake-project-arn"
@@ -565,21 +568,20 @@ describe("Run", () => {
 
     it("should fail if network profile name not found", async () => {
         const INPUTS = {
-            "run-name": "TEST RUN",
-            "run-settings-path": "run-settings.json",
+            "run-settings-json": `
+                {
+                    "projectArn": "arn:fake-project-arn",
+                    "devicePoolArn": "arn:fake-devicepool-arn",
+                    "configuration": {
+                        "networkProfileArn": "Bad Name"
+                    }
+                }
+            `,
             "artifact-types": "ALL",
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
         core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
-        const RUN_SETTINGS = {
-            projectArn: "arn:fake-project-arn",
-            devicePoolArn: "arn:fake-devicepool-arn",
-            configuration: {
-                networkProfileArn: "Bad Name"
-            }
-        }
-        fs.readFile.mockResolvedValueOnce(JSON.stringify(RUN_SETTINGS)); // run-settings file
         mockDeviceFarm
             .on(ListNetworkProfilesCommand, {
                 arn: "arn:fake-project-arn"
@@ -601,22 +603,21 @@ describe("Run", () => {
 
     it("should fail if vpce configuration name not found", async () => {
         const INPUTS = {
-            "run-name": "TEST RUN",
-            "run-settings-path": "run-settings.json",
+            "run-settings-json": `
+                {
+                    "projectArn": "arn:fake-project-arn",
+                    "devicePoolArn": "arn:fake-devicepool-arn",
+                    "configuration": {
+                        "networkProfileArn": "arn:fake-networkProfiles-arn",
+                        "vpceConfigurationArns": ["Bad Name"]
+                    }
+                }
+            `,
             "artifact-types": "ALL",
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
         core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
-        const RUN_SETTINGS = {
-            projectArn: "arn:fake-project-arn",
-            devicePoolArn: "arn:fake-devicepool-arn",
-            configuration: {
-                networkProfileArn: "arn:fake-networkProfiles-arn",
-                vpceConfigurationArns: ["Bad Name"]
-            }
-        }
-        fs.readFile.mockResolvedValueOnce(JSON.stringify(RUN_SETTINGS)); // run-settings file
         mockDeviceFarm
             .on(ListVPCEConfigurationsCommand)
             .resolvesOnce({
@@ -636,22 +637,21 @@ describe("Run", () => {
 
     it("should fail if upload name not found (WEB_APP)", async () => {
         const INPUTS = {
-            "run-name": "TEST RUN",
-            "run-settings-path": "run-settings.json",
+            "run-settings-json": `
+                {
+                    "name": "TEST RUNN",
+                    "projectArn": "arn:fake-project-arn",
+                    "appArn": "aws-devicefarm-sample-app.app",
+                    "devicePoolArn": "arn:fake-devicepool-arn",
+                    "test": {},
+                    "configuration": {}
+                }
+            `,
             "artifact-types": "",
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
         core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
-        const RUN_SETTINGS = {
-            name: "replace-this",
-            projectArn: "arn:fake-project-arn",
-            appArn: "aws-devicefarm-sample-app.app",
-            devicePoolArn: "arn:fake-devicepool-arn",
-            test: {},
-            configuration: {}
-        }
-        fs.readFile.mockResolvedValueOnce(JSON.stringify(RUN_SETTINGS)); // run-settings file
         mockDeviceFarm
             .on(ListUploadsCommand, {
                 arn: "arn:fake-project-arn",
@@ -674,23 +674,22 @@ describe("Run", () => {
 
     it("should paginate network profile lookup", async () => {
         const INPUTS = {
-            "run-name": "TEST RUN",
-            "run-settings-path": "run-settings.json",
+            "run-settings-json": `
+                {
+                    "projectArn": "arn:fake-project-arn",
+                    "appArn": "arn:fake-app-arn",
+                    "devicePoolArn": "arn:fake-devicepool-arn",
+                    "test": {},
+                    "configuration": {
+                        "networkProfileArn": "Network"
+                    }
+                }
+            `,
             "artifact-types": "",
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
         core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
-        const RUN_SETTINGS = {
-            projectArn: "arn:fake-project-arn",
-            appArn: "arn:fake-app-arn",
-            devicePoolArn: "arn:fake-devicepool-arn",
-            test: {},
-            configuration: {
-                networkProfileArn: "Network"
-            }
-        }
-        fs.readFile.mockResolvedValueOnce(JSON.stringify(RUN_SETTINGS)); // run-settings file
         mockDeviceFarm
             .on(ListNetworkProfilesCommand, {
                 arn: "arn:fake-project-arn"
@@ -726,22 +725,21 @@ describe("Run", () => {
 
     it("should lookup file arns when not found in file system (IOS)", async () => {
         const INPUTS = {
-            "run-name": "TEST RUN",
-            "run-settings-path": "run-settings.json",
+            "run-settings-json": `
+                {
+                    "name": "TEST RUN",
+                    "projectArn": "arn:fake-project-arn",
+                    "appArn": "aws-devicefarm-sample-app.ipa",
+                    "devicePoolArn": "arn:fake-devicepool-arn",
+                    "test": {},
+                    "configuration": {}
+                }
+            `,
             "artifact-types": "",
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
         core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
-        const RUN_SETTINGS = {
-            name: "replace-this",
-            projectArn: "arn:fake-project-arn",
-            appArn: "aws-devicefarm-sample-app.ipa",
-            devicePoolArn: "arn:fake-devicepool-arn",
-            test: {},
-            configuration: {}
-        }
-        fs.readFile.mockResolvedValueOnce(JSON.stringify(RUN_SETTINGS)); // run-settings file
         mockDeviceFarm
             .on(ListUploadsCommand, {
                 arn: "arn:fake-project-arn",
@@ -762,10 +760,22 @@ describe("Run", () => {
         expect(core.setFailed).toHaveBeenCalledWith("Cannot read properties of undefined (reading 'run')");
     });
 
-    it("should failed if axios put throws expection", async () => {
+    it("should fail if axios put throws expection", async () => {
         const INPUTS = {
-            "run-name": "TEST RUN",
-            "run-settings-path": "run-settings.json",
+            "run-settings-json": `
+                {
+                    "name": "TEST RUN",
+                    "projectArn": "arn:fake-project-arn",
+                    "appArn": "arn:fake-app-arn",
+                    "devicePoolArn": "arn:fake-devicepool-arn",
+                    "test": {
+                        "type": "APPIUM_NODE"
+                    },
+                    "configuration": {
+                        "extraDataPackageArn": "app_resources/external.zip"
+                    }
+                }
+            `,
             "artifact-types": "",
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
@@ -774,20 +784,7 @@ describe("Run", () => {
         mock({
             "app_resources/external.zip": "",
         });
-        const RUN_SETTINGS = {
-            name: "replace-this",
-            projectArn: "arn:fake-project-arn",
-            appArn: "arn:fake-app-arn",
-            devicePoolArn: "arn:fake-devicepool-arn",
-            test: {
-                type: "APPIUM_NODE"
-            },
-            configuration: {
-                extraDataPackageArn: "app_resources/external.zip"
-            }
-        }
-        fs.readFile.mockResolvedValueOnce(JSON.stringify(RUN_SETTINGS)); // run-settings file
-        fs.readFile.mockResolvedValue(""); // all other files
+        fs.readFile.mockResolvedValue("");
         mockDeviceFarm
             .on(CreateUploadCommand, {
                 projectArn: "arn:fake-project-arn",
@@ -809,10 +806,22 @@ describe("Run", () => {
         expect(core.setFailed).toHaveBeenCalledWith("fake error");
     });
 
-    it("should failed if upload status is FAILED", async () => {
+    it("should fail if upload status is FAILED", async () => {
         const INPUTS = {
-            "run-name": "TEST RUN",
-            "run-settings-path": "run-settings.json",
+            "run-settings-json": `
+                {
+                    "name": "TEST RUN",
+                    "projectArn": "arn:fake-project-arn",
+                    "appArn": "arn:fake-app-arn",
+                    "devicePoolArn": "arn:fake-devicepool-arn",
+                    "test": {
+                        "type": "APPIUM_NODE"
+                    },
+                    "configuration": {
+                        "extraDataPackageArn": "app_resources/external.zip"
+                    }
+                }
+            `,
             "artifact-types": "",
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
@@ -821,20 +830,7 @@ describe("Run", () => {
         mock({
             "app_resources/external.zip": "",
         });
-        const RUN_SETTINGS = {
-            name: "replace-this",
-            projectArn: "arn:fake-project-arn",
-            appArn: "arn:fake-app-arn",
-            devicePoolArn: "arn:fake-devicepool-arn",
-            test: {
-                type: "APPIUM_NODE"
-            },
-            configuration: {
-                extraDataPackageArn: "app_resources/external.zip"
-            }
-        }
-        fs.readFile.mockResolvedValueOnce(JSON.stringify(RUN_SETTINGS)); // run-settings file
-        fs.readFile.mockResolvedValue(""); // all other files
+        fs.readFile.mockResolvedValue("");
         mockDeviceFarm
             .on(CreateUploadCommand, {
                 projectArn: "arn:fake-project-arn",
@@ -864,5 +860,16 @@ describe("Run", () => {
         expect(axios.put).toHaveBeenCalledWith("fake-url", "", {"headers": {"Content-Type": "application/octet-stream"}});
         expect(mockDeviceFarm).toHaveReceivedCommandWith(GetUploadCommand, {arn: "fake-upload-arn"});
         expect(core.setFailed).toHaveBeenCalledWith("Upload failed: FAILED undefined");
+    });
+
+    it("should fail if invlaid json string supplied", async () => {
+        const INPUTS = {
+            "run-settings-json": "invalid-json",
+        };
+        core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
+
+        await run();
+
+        expect(core.setFailed).toHaveBeenCalledWith("Unexpected token i in JSON at position 0");
     });
 });

@@ -1,0 +1,15 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## 2.0 (2023-10-13)
+
+> **_BREAKING CHANGES_**
+>
+> Inputs `run-name` and `run-settings-path` have been removed in this release.
+
+### Features
+
+* Replaced input `run-settings-path` with `run-settings-json` - [Issue #1](https://github.com/aws-actions/aws-devicefarm-mobile-device-testing/issues/1)
+* Added output `console-url` [Issue #2](https://github.com/aws-actions/aws-devicefarm-mobile-device-testing/issues/2)
+* Upgraded runtime to `node20` from `node16`

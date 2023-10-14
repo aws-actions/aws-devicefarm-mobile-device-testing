@@ -1,6 +1,5 @@
 const INPUTS = {
-    runName: "run-name",
-    runSettingsPath: "run-settings-path",
+    runSettingsJson: "run-settings-json",
     artifactTypes: "artifact-types",
     uploadPollInterval: "upload-poll-interval",
     runPollInterval: "run-poll-interval",
@@ -11,6 +10,7 @@ const OUTPUTS = {
     status: "status",
     result: "result",
     artifactFolder: "artifact-folder",
+    consoleUrl: "console-url",
 };
 
 const UPLOAD = {

@@ -5,16 +5,11 @@ branding:
   icon: 'cloud'
   color: 'orange'
 inputs:
-    run-name:
+    run-settings-json:
       description: >-
-        The name to use for the name of the test run, must be unique within project.
-      require: true
-    run-settings-path:
-      description: >-
-        The path to the Run Settings json file.
+        The Run Settings as a json string.
         The schema for the contents of this file can be found here:
         https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-device-farm/Interface/ScheduleRunCommandInput/
-        NOTE: The name property in this file will be ignored if specified as the name of the test run is set by the run-name input.
         The following fields support supplying an ARN or a Name.
           - projectArn
           - devicePoolArn
@@ -25,7 +20,7 @@ inputs:
           - testPackageArn
           - testSpecArn
           - extraDataPackageArn
-          NOTE: If the file is not found in the repo the existing Project Uploads in Device Farm will be searched to one with matching type and name.
+          NOTE: If the file specified is not found in the repo the existing Project Uploads in Device Farm will be searched for one with matching type and name.
       required: true
     artifact-types:
       description: >-
@@ -54,7 +49,9 @@ outputs:
     description: 'The result of the Automated Test Run'
   artifact-folder:
     description: 'The name of the folder that the test artifacts are downloaded into'
+  console-url:
+    description: 'The AWS Console URL for the test run'
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/index.js'
   post: 'dist/cleanup/index.js'
