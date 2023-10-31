@@ -228,7 +228,6 @@ This action requires the following minimum set of permissions to run an Automate
       ],
       "Resource": [
         "arn:aws:devicefarm:us-west-2:${Account}:project:${ProjectId}",
-        "arn:aws:devicefarm:us-west-2::devicepool:*",
         "arn:aws:devicefarm:us-west-2:${Account}:devicepool:*",
         "arn:aws:devicefarm:us-west-2:${Account}:upload:*"
       ]
