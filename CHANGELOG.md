@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.1 (2024-06-04)
+
+> Fixed bug identified in issue [#8](#8) where `configuration` section in `run-settings-json` could not be excluded.
+
 ## 2.0 (2023-10-13)
 
 > **_BREAKING CHANGES_**

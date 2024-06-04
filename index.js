@@ -343,12 +343,12 @@ async function run() {
             core.info(`Device Pool ARN being used: ${runSettings.devicePoolArn}.`);
         }
         // Set Network Profile Arn
-        if (runSettings.configuration.networkProfileArn) {
+        if (runSettings.configuration?.networkProfileArn) {
             runSettings.configuration.networkProfileArn = await getNetworkProfileArn(runSettings.projectArn, runSettings.configuration.networkProfileArn);
             core.info(`Network Profile ARN being used: ${runSettings.configuration.networkProfileArn}.`);
         }
         // Set VPCE Configuration ARNs
-        if (runSettings.configuration.vpceConfigurationArns) {
+        if (runSettings.configuration?.vpceConfigurationArns) {
             runSettings.configuration.vpceConfigurationArns = await getVPCEConfigurationArns(runSettings.configuration.vpceConfigurationArns);
             core.info(`VPCE Configuration ARNs being used: ${runSettings.configuration.vpceConfigurationArns}.`);
         }
@@ -359,7 +359,7 @@ async function run() {
         // Upload Test Specification File
         const tspProm = uploadFile(runSettings.projectArn, runSettings.test.testSpecArn, "TEST_SPEC", runSettings.test.type, uploadPollInterval);
         // Upload External Data File
-        const extProm = uploadFile(runSettings.projectArn, runSettings.configuration.extraDataPackageArn, "EXTERNAL_DATA", null, uploadPollInterval);
+        const extProm = uploadFile(runSettings.projectArn, runSettings.configuration?.extraDataPackageArn, "EXTERNAL_DATA", null, uploadPollInterval);
         core.startGroup("Uploading files");
         const [appArn, tpkArn, tspArn, extArn] = await Promise.all([appProm, tpkProm, tspProm, extProm]);
         core.endGroup();
@@ -374,7 +374,7 @@ async function run() {
             runSettings.test.testSpecArn = tspArn;
         }
         // Set External Data Upload Arn
-        if (runSettings.configuration.extraDataPackageArn) {
+        if (runSettings.configuration?.extraDataPackageArn) {
             runSettings.configuration.extraDataPackageArn = extArn;
         }
         const testRun = await scheduleRun(runSettings, runPollInterval);

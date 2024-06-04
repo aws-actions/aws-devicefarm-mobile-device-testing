@@ -872,4 +872,263 @@ describe("Run", () => {
 
         expect(core.setFailed).toHaveBeenCalledWith("Unexpected token i in JSON at position 0");
     });
+
+    it("should handle missing configutation section", async () => {
+        const INPUTS = {
+            "run-settings-json": `
+                {
+                    "name": "TEST RUN",
+                    "projectArn": "Test",
+                    "appArn": "app_resources/aws-devicefarm-sample-app.apk",
+                    "devicePoolArn": "Top Devices",
+                    "test": {
+                        "type": "APPIUM_NODE",
+                        "testPackageArn": "app_resources/MySampleAndroidTests.zip",
+                        "testSpecArn": "app_resources/webdriverio_spec_file.yml"
+                    }
+                }
+            `,
+            "artifact-types": "ALL",
+            "upload-poll-interval": "0",
+            "run-poll-interval": "0",
+        };
+        core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
+        mock({
+            "app_resources/aws-devicefarm-sample-app.apk": "",
+            "app_resources/MySampleAndroidTests.zip": "",
+            "app_resources/webdriverio_spec_file.yml": "",
+        });
+        fs.readFile.mockResolvedValue("");
+        mockDeviceFarm
+            .on(ListProjectsCommand, {})
+            .resolvesOnce({
+                projects: [
+                    {
+                        arn: "fake-project-arn",
+                        name: "Test"
+                    }
+                ]
+            })
+            .on(ListDevicePoolsCommand, {
+                arn: "fake-project-arn"
+            })
+            .resolvesOnce({
+                devicePools: [
+                    {
+                        arn: "fake-devicepool-arn",
+                        name: "Top Devices"
+                    }
+                ]
+            })
+            .on(ListNetworkProfilesCommand, {
+                arn: "fake-project-arn"
+            })
+            .resolvesOnce({
+                networkProfiles: [
+                    {
+                        arn: "fake-networkProfiles-arn",
+                        name: "Network"
+                    }
+                ]
+            })
+            .on(ListVPCEConfigurationsCommand)
+            .resolvesOnce({
+                vpceConfigurations: [
+                    {
+                        arn: "fake-vpceConfiguration-arn",
+                        vpceConfigurationName: "fake-name"
+                    }
+                ],
+                nextToken: "fake-token",
+            })
+            .on(ListVPCEConfigurationsCommand, {
+                nextToken: "fake-token",
+            })
+            .resolvesOnce({
+                vpceConfigurations: [
+                    {
+                        arn: "fake-vpceConfiguration-arn",
+                        vpceConfigurationName: "VPCE"
+                    }
+                ]
+            })
+            .on(CreateUploadCommand, {
+                projectArn: "fake-project-arn",
+                name: "1_aws-devicefarm-sample-app.apk",
+                type: "ANDROID_APP"
+            })
+            .resolvesOnce({
+                upload: {
+                    arn: "fake-upload-arn-1",
+                    url: "fake-url-1"
+                }
+            })
+            .on(GetUploadCommand, {
+                arn: "fake-upload-arn-1"
+            })
+            .resolvesOnce({
+                upload: {
+                    arn: "fake-upload-arn-1",
+                    name: "1_aws-devicefarm-sample-app.apk",
+                    status: UPLOAD.STATUS.SUCCEEDED
+                }
+            })
+            .on(CreateUploadCommand, {
+                projectArn: "fake-project-arn",
+                name: "1_MySampleAndroidTests.zip",
+                type: "APPIUM_NODE_TEST_PACKAGE"
+            })
+            .resolvesOnce({
+                upload: {
+                    arn: "fake-upload-arn-2",
+                    url: "fake-url-2"
+                }
+            })
+            .on(GetUploadCommand, {
+                arn: "fake-upload-arn-2"
+            })
+            .resolvesOnce({
+                upload: {
+                    arn: "fake-upload-arn-2",
+                    name: "1_MySampleAndroidTests.zip",
+                    status: UPLOAD.STATUS.SUCCEEDED
+                }
+            })
+            .on(CreateUploadCommand, {
+                projectArn: "fake-project-arn",
+                name: "1_webdriverio_spec_file.yml",
+                type: "APPIUM_NODE_TEST_SPEC"
+            })
+            .resolvesOnce({
+                upload: {
+                    arn: "fake-upload-arn-3",
+                    url: "fake-url-3"
+                }
+            })
+            .on(GetUploadCommand, {
+                arn: "fake-upload-arn-3"
+            })
+            .resolvesOnce({
+                upload: {
+                    arn: "fake-upload-arn-3",
+                    name: "1_webdriverio_spec_file.yml",
+                    status: UPLOAD.STATUS.SUCCEEDED
+                }
+            })
+            .on(ScheduleRunCommand)
+            .resolvesOnce({
+                run: {
+                    name: INPUTS["run-name"],
+                    status: RUN.STATUS.COMPLETED,
+                    arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id",
+                    result: RUN.RESULT.PASSED,
+                    counters: {total: 1, passed: 1, warned: 0, errored: 0, failed: 0, skipped: 0, stopped: 0},
+                }
+            })
+            .on(GetRunCommand, {
+                arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id"
+            })
+            .resolvesOnce({
+                run: {
+                    name: INPUTS["run-name"],
+                    status: RUN.STATUS.COMPLETED,
+                    arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id",
+                    result: RUN.RESULT.PASSED,
+                    counters: {total: 1, passed: 1, warned: 0, errored: 0, failed: 0, skipped: 0, stopped: 0},
+                }
+            })
+            .on(ListJobsCommand, {
+                arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id"
+            })
+            .resolvesOnce({
+                jobs: [
+                    {
+                        arn: "arn:aws:devicefarm:us-west-2:account-id:job:project-id/run-id/fake-job-id",
+                        name: "fake-job",
+                        counters: {total: 1, passed: 1, warned: 0, errored: 0, failed: 0, skipped: 0, stopped: 0},
+                    }
+                ]
+            })
+            .on(ListSuitesCommand, {
+                arn: "arn:aws:devicefarm:us-west-2:account-id:job:project-id/run-id/fake-job-id"
+            })
+            .resolvesOnce({
+                suites: [
+                    {
+                        arn: "arn:aws:devicefarm:us-west-2:account-id:job:project-id/run-id/fake-job-id/fake-suite-id",
+                        name: "fake-suite"
+                    }
+                ]
+            })
+            .on(ListTestsCommand, {
+                arn: "arn:aws:devicefarm:us-west-2:account-id:job:project-id/run-id/fake-job-id/fake-suite-id"
+            })
+            .resolvesOnce({
+                tests: [
+                    {
+                        arn: "arn:aws:devicefarm:us-west-2:account-id:job:project-id/run-id/fake-job-id/fake-suite-id/fake-test-id",
+                        name: "fake-test"
+                    }
+                ]
+            });
+        RUN.ARTIFACT_TYPES.forEach(type => {
+            mockDeviceFarm
+                .on(ListArtifactsCommand, {
+                    arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id",
+                    type: type
+                })
+                .resolvesOnce({
+                    artifacts: [
+                        {
+                            arn: `arn:aws:devicefarm:us-west-2:account-id:artifact:project-id/run-id/fake-job-id/fake-suite-id/fake-test-id/fake-asset-${type}-id`,
+                            name: `fake-${type}-name`,
+                            type: type,
+                            extension: `fake-${type}-extension`,
+                            url: `fake-${type}-url`
+                        }
+                    ]
+                });
+        });
+        axios.get.mockResolvedValue(Promise.resolve({data: ""}));
+
+        await run();
+
+        expect(mockDeviceFarm).toHaveReceivedCommandWith(ListProjectsCommand, {});
+        expect(core.saveState).toHaveBeenCalledWith("projectArn", "fake-project-arn");
+        expect(mockDeviceFarm).toHaveReceivedCommandWith(ListDevicePoolsCommand, {arn: "fake-project-arn"});
+        expect(mockDeviceFarm).toHaveReceivedCommandTimes(ListNetworkProfilesCommand, 0);
+        expect(mockDeviceFarm).toHaveReceivedCommandTimes(ListVPCEConfigurationsCommand, 0);
+        expect(mockDeviceFarm).toHaveReceivedCommandWith(CreateUploadCommand, {projectArn: "fake-project-arn", name: "1_aws-devicefarm-sample-app.apk", type: "ANDROID_APP"});
+        expect(mockDeviceFarm).toHaveReceivedCommandWith(CreateUploadCommand, {projectArn: "fake-project-arn", name: "1_MySampleAndroidTests.zip", type: "APPIUM_NODE_TEST_PACKAGE"});
+        expect(mockDeviceFarm).toHaveReceivedCommandWith(CreateUploadCommand, {projectArn: "fake-project-arn", name: "1_webdriverio_spec_file.yml", type: "APPIUM_NODE_TEST_SPEC"});
+        expect(axios.put).toHaveBeenCalledWith("fake-url-1", "", {"headers": {"Content-Type": "application/octet-stream"}});
+        expect(axios.put).toHaveBeenCalledWith("fake-url-2", "", {"headers": {"Content-Type": "application/octet-stream"}});
+        expect(axios.put).toHaveBeenCalledWith("fake-url-3", "", {"headers": {"Content-Type": "application/octet-stream"}});
+        expect(mockDeviceFarm).toHaveReceivedCommandWith(GetUploadCommand, {arn: "fake-upload-arn-1"});
+        expect(mockDeviceFarm).toHaveReceivedCommandWith(GetUploadCommand, {arn: "fake-upload-arn-2"});
+        expect(mockDeviceFarm).toHaveReceivedCommandWith(GetUploadCommand, {arn: "fake-upload-arn-3"});
+        expect(mockDeviceFarm).toHaveReceivedCommandWith(ScheduleRunCommand, {
+            name: "TEST RUN",
+            projectArn: "fake-project-arn",
+            appArn: "fake-upload-arn-1",
+            devicePoolArn: "fake-devicepool-arn",
+            test: {
+                type: "APPIUM_NODE",
+                testPackageArn: "fake-upload-arn-2",
+                testSpecArn: "fake-upload-arn-3",
+            },
+        });
+        expect(mockDeviceFarm).toHaveReceivedCommandWith(GetRunCommand, {arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id"});
+        expect(mockDeviceFarm).toHaveReceivedCommandWith(ListJobsCommand, {arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id"})
+        expect(mockDeviceFarm).toHaveReceivedCommandWith(ListSuitesCommand, {arn: "arn:aws:devicefarm:us-west-2:account-id:job:project-id/run-id/fake-job-id"})
+        expect(mockDeviceFarm).toHaveReceivedCommandWith(ListTestsCommand, {arn: "arn:aws:devicefarm:us-west-2:account-id:job:project-id/run-id/fake-job-id/fake-suite-id"})
+        expect(mockDeviceFarm).toHaveReceivedCommandTimes(ListArtifactsCommand, RUN.ARTIFACT_TYPES.length);
+        RUN.ARTIFACT_TYPES.forEach(type => {
+            expect(mockDeviceFarm).toHaveReceivedCommandWith(ListArtifactsCommand, {arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id", type: type});
+            expect(axios.get).toHaveBeenCalledWith(`fake-${type}-url`, { "responseType": "arraybuffer" });
+            expect(fs.writeFile).toBeCalledWith(`./run-id/fake-job/fake-suite/fake-test/fake-asset-${type}-id-fake-${type}-name.fake-${type}-extension`, Buffer.from(""));
+        });
+        expect(core.setFailed).toHaveBeenCalledTimes(0);
+    });
+
 });
