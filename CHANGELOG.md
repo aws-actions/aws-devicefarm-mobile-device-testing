@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.2 (2024-07-30)
+
+> Fixed dependabot security finding [#6](https://github.com/aws-actions/aws-devicefarm-mobile-device-testing/security/dependabot/6).
+
+
 ## 2.1 (2024-06-04)
 
 > Fixed bug identified in issue [#8](#8) where `configuration` section in `run-settings-json` could not be excluded.
