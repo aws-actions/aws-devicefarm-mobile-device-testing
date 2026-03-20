@@ -52,6 +52,6 @@ outputs:
   console-url:
     description: 'The AWS Console URL for the test run'
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/index.js'
   post: 'dist/cleanup/index.js'
