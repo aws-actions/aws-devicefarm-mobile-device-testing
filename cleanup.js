@@ -1,13 +1,13 @@
-const {
+import {
     DeviceFarmClient,
     paginateListUploads,
     DeleteUploadCommand
-} = require("@aws-sdk/client-device-farm");
-const core = require("@actions/core");
-const github = require("@actions/github");
-const fs = require("fs/promises");
-const { existsSync } = require("fs");
-const { UPLOAD } = require("./constants");
+} from "@aws-sdk/client-device-farm";
+import * as core from "@actions/core";
+import * as github from "@actions/github";
+import fs from "fs/promises";
+import { existsSync } from "fs";
+import { UPLOAD } from "./constants.js";
 
 const deviceFarm = new DeviceFarmClient();
 
@@ -39,11 +39,11 @@ async function cleanup() {
     }
 }
 
-module.exports = {
+export {
     cleanup
 };
 
 /* istanbul ignore next */
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
     cleanup();
 }

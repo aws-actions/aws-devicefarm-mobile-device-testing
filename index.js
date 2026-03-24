@@ -1,4 +1,4 @@
-const {
+import {
     DeviceFarmClient,
     paginateListProjects,
     paginateListDevicePools,
@@ -13,14 +13,14 @@ const {
     paginateListJobs,
     paginateListSuites,
     paginateListTests,
-} = require("@aws-sdk/client-device-farm");
-const path = require("path");
-const axios = require("axios");
-const fs = require("fs/promises");
-const { existsSync } = require("fs");
-const core = require("@actions/core");
-const github = require("@actions/github");
-const { INPUTS, OUTPUTS, UPLOAD, RUN } = require("./constants");
+} from "@aws-sdk/client-device-farm";
+import path from "path";
+import axios from "axios";
+import fs from "fs/promises";
+import { existsSync } from "fs";
+import * as core from "@actions/core";
+import * as github from "@actions/github";
+import { INPUTS, OUTPUTS, UPLOAD, RUN } from "./constants.js";
 
 const deviceFarm = new DeviceFarmClient();
 
@@ -410,11 +410,11 @@ async function run() {
     }
 }
 
-module.exports = {
+export {
     run,
 };
 
 /* istanbul ignore next */
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
     run();
 }

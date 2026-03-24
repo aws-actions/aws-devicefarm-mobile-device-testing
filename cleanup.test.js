@@ -1,24 +1,25 @@
-const { cleanup } = require("./cleanup.js");
-const {
+import { vi } from "vitest";
+import { cleanup } from "./cleanup.js";
+import {
     DeviceFarmClient,
     ListUploadsCommand,
     DeleteUploadCommand
-} = require("@aws-sdk/client-device-farm");
-const core = require("@actions/core");
-const github = require("@actions/github");
-const fs = require("fs/promises");
-const { UPLOAD } = require("./constants");
-const { mockClient } = require("aws-sdk-client-mock");
-require("aws-sdk-client-mock-jest");
-const mock = require("mock-fs");
+} from "@aws-sdk/client-device-farm";
+import * as core from "@actions/core";
+import * as github from "@actions/github";
+import fs from "fs/promises";
+import { UPLOAD } from "./constants.js";
+import { mockClient } from "aws-sdk-client-mock";
+import "aws-sdk-client-mock-vitest";
+import mock from "mock-fs";
 
-jest.mock("@actions/core");
-jest.mock("@actions/github", () => ({
+vi.mock("@actions/core");
+vi.mock("@actions/github", () => ({
     context: {
         runId: 1
     }
 }));
-jest.mock("fs/promises");
+vi.mock("fs/promises");
 
 function mockGetState(requestResponse) {
     return function (name, options) { // eslint-disable-line no-unused-vars
@@ -36,8 +37,8 @@ const mockDeviceFarm = mockClient(DeviceFarmClient);
 describe("Cleanup", () => {
 
     beforeEach(() => {
-        jest.clearAllMocks();
-        core.getState = jest.fn().mockImplementation(mockGetState(STATES));
+        vi.clearAllMocks();
+        core.getState = vi.fn().mockImplementation(mockGetState(STATES));
         mockDeviceFarm.reset();
     });
 
@@ -86,10 +87,10 @@ describe("Cleanup", () => {
         await cleanup();
 
         expect(github.context.runId).toBe(1);
-        expect(mockDeviceFarm).toHaveReceivedNthSpecificCommandWith(1, ListUploadsCommand, {
+        expect(mockDeviceFarm).toHaveReceivedCommandWith(ListUploadsCommand, {
             arn: "fake-project-arn"
         });
-        expect(mockDeviceFarm).toHaveReceivedNthSpecificCommandWith(1, DeleteUploadCommand, {
+        expect(mockDeviceFarm).toHaveReceivedCommandWith(DeleteUploadCommand, {
             arn: "fake-upload-arn-1"
         });
         expect(core.setFailed).toHaveBeenCalledTimes(0);
