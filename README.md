@@ -60,10 +60,10 @@ For example, testing new versions of code being committed to a branch to ensure 
 
 ```yaml
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6.0.2
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2 # More information on this action can be found below in the 'AWS Credentials' section
+        uses: aws-actions/configure-aws-credentials@v6.0.0 # More information on this action can be found below in the 'AWS Credentials' section
         with:
           role-to-assume: arn:aws:iam::123456789012:role/my-github-actions-role
           aws-region: us-west-2
@@ -74,7 +74,7 @@ For example, testing new versions of code being committed to a branch to ensure 
 ```yaml
       - name: Schedule Device Farm Automated Test
         id: run-test
-        uses: aws-actions/aws-devicefarm-mobile-device-testing@v2.0
+        uses: aws-actions/aws-devicefarm-mobile-device-testing@v3.0
         with:
           run-settings-json: |
             {
@@ -90,7 +90,7 @@ For example, testing new versions of code being committed to a branch to ensure 
             }
           artifact-types: ALL
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v7.0.0
         if: always() # This ensures the artifacts are uploaded even if the Test Run Fails
         with:
           name: AutomatedTestOutputFiles
@@ -102,7 +102,7 @@ For example, testing new versions of code being committed to a branch to ensure 
 ```yaml
       - name: Schedule Device Farm Automated Test
         id: run-test
-        uses: aws-actions/aws-devicefarm-mobile-device-testing@v2.0
+        uses: aws-actions/aws-devicefarm-mobile-device-testing@v3.0
         with:
           run-settings-json: |
             {
@@ -118,7 +118,7 @@ For example, testing new versions of code being committed to a branch to ensure 
             }
           artifact-types: VIDEO,SCREENSHOT
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v7.0.0
         if: always() # This ensures the artifacts are uploaded even if the Test Run Fails
         with:
           name: AutomatedTestOutputFiles
@@ -130,7 +130,7 @@ For example, testing new versions of code being committed to a branch to ensure 
 ```yaml
       - name: Schedule Device Farm Automated Test
         id: run-test
-        uses: aws-actions/aws-devicefarm-mobile-device-testing@v2.0
+        uses: aws-actions/aws-devicefarm-mobile-device-testing@v3.0
         with:
           run-settings-json: |
             {
@@ -156,14 +156,14 @@ This action relies on the [default behaviour of the AWS SDK for JavaScript](http
 
 ```yaml
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v6.0.0
         with:
           role-to-assume: arn:aws:iam::123456789012:role/my-github-actions-role
           aws-region: us-west-2
 
       - name: Schedule Device Farm Automated Test
         id: run-test
-        uses: aws-actions/aws-devicefarm-mobile-device-testing@v2.0
+        uses: aws-actions/aws-devicefarm-mobile-device-testing@v3.0
         with:
           run-settings-json: |
             {
