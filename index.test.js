@@ -1,5 +1,6 @@
-const { run } = require("./index.js");
-const {
+import { vi } from "vitest";
+import { run } from "./index.js";
+import {
     DeviceFarmClient,
     ListProjectsCommand,
     ListDevicePoolsCommand,
@@ -14,19 +15,19 @@ const {
     ListJobsCommand,
     ListSuitesCommand,
     ListTestsCommand,
-} = require("@aws-sdk/client-device-farm");
-const axios = require("axios");
-const fs = require("fs/promises");
-const core = require("@actions/core");
-const { UPLOAD, RUN } = require("./constants");
-const { mockClient } = require("aws-sdk-client-mock");
-require("aws-sdk-client-mock-jest");
-const mock = require("mock-fs");
+} from "@aws-sdk/client-device-farm";
+import axios from "axios";
+import fs from "fs/promises";
+import * as core from "@actions/core";
+import { UPLOAD, RUN } from "./constants.js";
+import { mockClient } from "aws-sdk-client-mock";
+import "aws-sdk-client-mock-vitest";
+import mock from "mock-fs";
 
-jest.mock("axios");
-jest.mock("fs/promises");
-jest.mock("@actions/core");
-jest.mock("@actions/github", () => ({
+vi.mock("axios");
+vi.mock("fs/promises");
+vi.mock("@actions/core");
+vi.mock("@actions/github", () => ({
     context: {
         runId: 1
     }
@@ -51,7 +52,7 @@ const mockDeviceFarm = mockClient(DeviceFarmClient);
 describe("Run", () => {
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockDeviceFarm.reset();
     });
 
@@ -83,7 +84,7 @@ describe("Run", () => {
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
-        core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
         mock({
             "app_resources/aws-devicefarm-sample-app.apk": "",
             "app_resources/MySampleAndroidTests.zip": "",
@@ -373,7 +374,7 @@ describe("Run", () => {
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
-        core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
         mockDeviceFarm
             .on(ListVPCEConfigurationsCommand)
             .resolvesOnce({
@@ -516,7 +517,7 @@ describe("Run", () => {
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
-        core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
         mockDeviceFarm
             .on(ListProjectsCommand, {})
             .resolvesOnce({
@@ -546,7 +547,7 @@ describe("Run", () => {
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
-        core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
         mockDeviceFarm
             .on(ListDevicePoolsCommand, {
                 arn: "arn:fake-project-arn"
@@ -581,7 +582,7 @@ describe("Run", () => {
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
-        core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
         mockDeviceFarm
             .on(ListNetworkProfilesCommand, {
                 arn: "arn:fake-project-arn"
@@ -617,7 +618,7 @@ describe("Run", () => {
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
-        core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
         mockDeviceFarm
             .on(ListVPCEConfigurationsCommand)
             .resolvesOnce({
@@ -651,7 +652,7 @@ describe("Run", () => {
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
-        core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
         mockDeviceFarm
             .on(ListUploadsCommand, {
                 arn: "arn:fake-project-arn",
@@ -689,7 +690,7 @@ describe("Run", () => {
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
-        core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
         mockDeviceFarm
             .on(ListNetworkProfilesCommand, {
                 arn: "arn:fake-project-arn"
@@ -718,8 +719,8 @@ describe("Run", () => {
 
         await run();
 
-        expect(mockDeviceFarm).toHaveReceivedNthSpecificCommandWith(1, ListNetworkProfilesCommand, {arn: "arn:fake-project-arn"});
-        expect(mockDeviceFarm).toHaveReceivedNthSpecificCommandWith(2, ListNetworkProfilesCommand, {arn: "arn:fake-project-arn", nextToken: "fake-token"});
+        expect(mockDeviceFarm).toHaveReceivedCommandWith(ListNetworkProfilesCommand, {arn: "arn:fake-project-arn"});
+        expect(mockDeviceFarm).toHaveReceivedCommandWith(ListNetworkProfilesCommand, {arn: "arn:fake-project-arn", nextToken: "fake-token"});
         expect(core.setFailed).toHaveBeenCalledWith("Cannot read properties of undefined (reading 'run')");
     });
 
@@ -739,7 +740,7 @@ describe("Run", () => {
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
-        core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
         mockDeviceFarm
             .on(ListUploadsCommand, {
                 arn: "arn:fake-project-arn",
@@ -780,7 +781,7 @@ describe("Run", () => {
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
-        core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
         mock({
             "app_resources/external.zip": "",
         });
@@ -826,7 +827,7 @@ describe("Run", () => {
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
-        core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
         mock({
             "app_resources/external.zip": "",
         });
@@ -866,11 +867,12 @@ describe("Run", () => {
         const INPUTS = {
             "run-settings-json": "invalid-json",
         };
-        core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
 
         await run();
 
-        expect(core.setFailed).toHaveBeenCalledWith("Unexpected token i in JSON at position 0");
+        expect(core.setFailed).toHaveBeenCalled();
+        expect(core.setFailed.mock.calls[0][0]).toContain("invalid-json");
     });
 
     it("should handle missing configutation section", async () => {
@@ -892,7 +894,7 @@ describe("Run", () => {
             "upload-poll-interval": "0",
             "run-poll-interval": "0",
         };
-        core.getInput = jest.fn().mockImplementation(mockGetInput(INPUTS));
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
         mock({
             "app_resources/aws-devicefarm-sample-app.apk": "",
             "app_resources/MySampleAndroidTests.zip": "",

@@ -1,11 +1,11 @@
-const INPUTS = {
+export const INPUTS = {
     runSettingsJson: "run-settings-json",
     artifactTypes: "artifact-types",
     uploadPollInterval: "upload-poll-interval",
     runPollInterval: "run-poll-interval",
 };
 
-const OUTPUTS = {
+export const OUTPUTS = {
     arn: "arn",
     status: "status",
     result: "result",
@@ -13,7 +13,7 @@ const OUTPUTS = {
     consoleUrl: "console-url",
 };
 
-const UPLOAD = {
+export const UPLOAD = {
     STATUS: {
         INITIALIZED: "INITIALIZED",
         PROCESSING: "PROCESSING",
@@ -26,7 +26,7 @@ const UPLOAD = {
     },
 };
 
-const RUN = {
+export const RUN = {
     STATUS: {
         PENDING: "PENDING",
         PENDING_CONCURRENCY: "PENDING_CONCURRENCY",
@@ -52,11 +52,4 @@ const RUN = {
         "FILE",
         "LOG",
     ]
-};
-
-module.exports = {
-    INPUTS,
-    OUTPUTS,
-    UPLOAD,
-    RUN,
 };
