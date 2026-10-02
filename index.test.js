@@ -18,6 +18,7 @@ import {
 } from "@aws-sdk/client-device-farm";
 import axios from "axios";
 import fs from "fs/promises";
+import path from "path";
 import * as core from "@actions/core";
 import { UPLOAD, RUN } from "./constants.js";
 import { mockClient } from "aws-sdk-client-mock";
@@ -1130,6 +1131,209 @@ describe("Run", () => {
             expect(axios.get).toHaveBeenCalledWith(`fake-${type}-url`, { "responseType": "arraybuffer" });
             expect(fs.writeFile).toBeCalledWith(`./run-id/fake-job/fake-suite/fake-test/fake-asset-${type}-id-fake-${type}-name.fake-${type}-extension`, Buffer.from(""));
         });
+        expect(core.setFailed).toHaveBeenCalledTimes(0);
+    });
+
+    it("should reject an upload path that symlinks outside the repository", async () => {
+        const INPUTS = {
+            "run-settings-json": `
+                {
+                    "name": "TEST RUN",
+                    "projectArn": "arn:fake-project-arn",
+                    "appArn": "aws-devicefarm-sample-app.apk",
+                    "devicePoolArn": "arn:fake-devicepool-arn",
+                    "test": {}
+                }
+            `,
+            "upload-poll-interval": "0",
+            "run-poll-interval": "0",
+        };
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
+        mock({
+            [path.resolve("..", "outside-file.txt")]: "outside content",
+            "aws-devicefarm-sample-app.apk": mock.symlink({ path: "../outside-file.txt" }),
+        });
+
+        await run();
+
+        expect(core.setFailed).toHaveBeenCalledWith("Upload file \"aws-devicefarm-sample-app.apk\" resolves outside the repository and will not be uploaded.");
+        // Nothing outside the repository is read or uploaded.
+        expect(fs.readFile).not.toHaveBeenCalled();
+        expect(axios.put).not.toHaveBeenCalled();
+        expect(mockDeviceFarm).toHaveReceivedCommandTimes(CreateUploadCommand, 0);
+    });
+
+    it("should reject an absolute upload path", async () => {
+        const INPUTS = {
+            "run-settings-json": `
+                {
+                    "name": "TEST RUN",
+                    "projectArn": "arn:fake-project-arn",
+                    "appArn": "/tmp/app.apk",
+                    "devicePoolArn": "arn:fake-devicepool-arn",
+                    "test": {}
+                }
+            `,
+            "upload-poll-interval": "0",
+            "run-poll-interval": "0",
+        };
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
+
+        await run();
+
+        expect(core.setFailed).toHaveBeenCalledWith("Upload file \"/tmp/app.apk\" must be a path within the repository. Absolute paths are not supported.");
+        expect(fs.readFile).not.toHaveBeenCalled();
+        expect(axios.put).not.toHaveBeenCalled();
+    });
+
+    it("should confine uploads to GITHUB_WORKSPACE when it is set", async () => {
+        const INPUTS = {
+            "run-settings-json": `
+                {
+                    "name": "TEST RUN",
+                    "projectArn": "arn:fake-project-arn",
+                    "appArn": "aws-devicefarm-sample-app.apk",
+                    "devicePoolArn": "arn:fake-devicepool-arn",
+                    "test": {}
+                }
+            `,
+            "upload-poll-interval": "0",
+            "run-poll-interval": "0",
+        };
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
+        mock({
+            [path.resolve("..", "outside-file.txt")]: "outside content",
+            "aws-devicefarm-sample-app.apk": mock.symlink({ path: "../outside-file.txt" }),
+        });
+        process.env.GITHUB_WORKSPACE = process.cwd();
+
+        try {
+            await run();
+        } finally {
+            delete process.env.GITHUB_WORKSPACE;
+        }
+
+        expect(core.setFailed).toHaveBeenCalledWith("Upload file \"aws-devicefarm-sample-app.apk\" resolves outside the repository and will not be uploaded.");
+        expect(axios.put).not.toHaveBeenCalled();
+    });
+
+    it("should reject an upload path that traverses outside the repository", async () => {
+        const INPUTS = {
+            "run-settings-json": `
+                {
+                    "name": "TEST RUN",
+                    "projectArn": "arn:fake-project-arn",
+                    "appArn": "../outside-file.txt",
+                    "devicePoolArn": "arn:fake-devicepool-arn",
+                    "test": {}
+                }
+            `,
+            "upload-poll-interval": "0",
+            "run-poll-interval": "0",
+        };
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
+        mock({
+            [path.resolve("..", "outside-file.txt")]: "outside content",
+        });
+
+        await run();
+
+        expect(core.setFailed).toHaveBeenCalledWith("Upload file \"../outside-file.txt\" resolves outside the repository and will not be uploaded.");
+        expect(fs.readFile).not.toHaveBeenCalled();
+        expect(axios.put).not.toHaveBeenCalled();
+    });
+
+    it("should keep artifact paths inside the artifact folder when names contain path separators", async () => {
+        const INPUTS = {
+            "run-settings-json": `
+                {
+                    "name": "TEST RUN",
+                    "projectArn": "arn:fake-project-arn",
+                    "appArn": "arn:fake-app-arn",
+                    "devicePoolArn": "arn:fake-devicepool-arn",
+                    "test": {}
+                }
+            `,
+            "artifact-types": "SCREENSHOT",
+            "upload-poll-interval": "0",
+            "run-poll-interval": "0",
+        };
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
+        const counters = {total: 1, passed: 1, warned: 0, errored: 0, failed: 0, skipped: 0, stopped: 0};
+        mockDeviceFarm
+            .on(ScheduleRunCommand)
+            .resolves({
+                run: {arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id"}
+            })
+            .on(GetRunCommand)
+            .resolves({
+                run: {
+                    arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id",
+                    status: RUN.STATUS.COMPLETED,
+                    result: RUN.RESULT.PASSED,
+                    counters: counters,
+                }
+            })
+            .on(ListJobsCommand)
+            .resolves({
+                jobs: [
+                    {
+                        arn: "arn:aws:devicefarm:us-west-2:account-id:job:project-id/run-id/fake-job-id",
+                        name: "Google Pixel 8",
+                        counters: counters,
+                    }
+                ]
+            })
+            .on(ListSuitesCommand)
+            .resolves({
+                suites: [
+                    {
+                        arn: "arn:aws:devicefarm:us-west-2:account-id:suite:project-id/run-id/fake-job-id/fake-suite-id",
+                        name: "../../../../..",
+                    }
+                ]
+            })
+            .on(ListTestsCommand)
+            .resolves({
+                tests: [
+                    {
+                        arn: "arn:aws:devicefarm:us-west-2:account-id:test:project-id/run-id/fake-job-id/fake-suite-id/fake-test-id",
+                        name: "..",
+                    }
+                ]
+            })
+            .on(ListArtifactsCommand, {
+                arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id",
+                type: "SCREENSHOT"
+            })
+            .resolves({
+                artifacts: [
+                    {
+                        arn: "arn:aws:devicefarm:us-west-2:account-id:artifact:project-id/run-id/fake-job-id/fake-suite-id/fake-test-id/fake-asset-id",
+                        name: "../../../../artifact-name",
+                        type: "SCREENSHOT",
+                        extension: "png",
+                        url: "fake-url"
+                    }
+                ]
+            })
+            .on(ListArtifactsCommand, {
+                arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id",
+                type: "FILE"
+            })
+            .resolves({artifacts: []})
+            .on(ListArtifactsCommand, {
+                arn: "arn:aws:devicefarm:us-west-2:account-id:run:project-id/run-id",
+                type: "LOG"
+            })
+            .resolves({artifacts: []});
+        axios.get.mockResolvedValue(Promise.resolve({data: ""}));
+
+        await run();
+
+        // Each name segment is flattened, so the write stays under ./run-id. A segment that is exactly ".."
+        // becomes "_".
+        expect(fs.writeFile).toBeCalledWith("./run-id/Google Pixel 8/.._.._.._.._../_/fake-asset-id-.._.._.._.._artifact-name.png", Buffer.from(""));
         expect(core.setFailed).toHaveBeenCalledTimes(0);
     });
 
