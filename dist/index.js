@@ -5,7 +5,7 @@ import http, { request as request$4 } from 'http';
 import https from 'https';
 import require$$5, { parse as parse$2 } from 'url';
 import * as fs from 'fs';
-import fs__default, { promises, existsSync, readFileSync } from 'fs';
+import fs__default, { promises, existsSync, readFileSync, realpathSync } from 'fs';
 import * as crypto$1 from 'crypto';
 import crypto__default, { createHash, createHmac } from 'crypto';
 import require$$0$1 from 'net';
@@ -72217,6 +72217,39 @@ function countersToString(counters) {
     return `Total: ${counters.total}, passed: ${counters.passed}, warned: ${counters.warned}, errored: ${counters.errored}, failed: ${counters.failed}, skipped: ${counters.skipped}, stopped: ${counters.stopped}`;
 }
 
+function isWithin(root, target) {
+    const relative = path.relative(root, target);
+    return relative === "" || (relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative));
+}
+
+// action.yml documents the upload path inputs as "a path to the file to be found within the repository".
+// Resolve the supplied path, following any symbolic links, and check the result is inside the workspace.
+function resolveRepositoryPath(filePath) {
+    if (path.isAbsolute(filePath)) {
+        throw new Error(`Upload file "${filePath}" must be a path within the repository. Absolute paths are not supported.`);
+    }
+    const root = realpathSync(process.env.GITHUB_WORKSPACE || process.cwd());
+    let resolved;
+    try {
+        // realpathSync follows the full chain of symbolic links, so the check below sees the final location.
+        resolved = realpathSync(path.resolve(root, filePath));
+    } catch {
+        // Nothing exists at that path. The caller falls back to looking the name up in Device Farm.
+        return null;
+    }
+    if (!isWithin(root, resolved)) {
+        throw new Error(`Upload file "${filePath}" resolves outside the repository and will not be uploaded.`);
+    }
+    return resolved;
+}
+
+// Job, suite, test and artifact names are used as directory and file names. Replace path separators so
+// each name maps to a single path segment.
+function safePathSegment(name) {
+    const segment = String(name).replace(/[/\\]/g, "_");
+    return segment === "" || segment === "." || segment === ".." ? "_" : segment;
+}
+
 async function getProjectArn(projectArn) {
     // ARN Already supplied no action required.
     if (projectArn.startsWith("arn:")) return projectArn;
@@ -72348,7 +72381,8 @@ async function uploadFile(projectArn, fileArn, fileType, testType, pollInterval)
                 fileType = `${testType}_${fileType}`;
             }
             // Check if file exists within repo if not check Device Farm for existing file with same name.
-            if (!existsSync(fileArn)) {
+            const resolvedPath = resolveRepositoryPath(fileArn);
+            if (!resolvedPath) {
                 info(`Upload file: ${fileArn} was not found in the repository checking AWS Device Farm for existing file...`);
                 return await getUploadArn(projectArn, fileType, fileArn);
                 // File found in repo therefore upload the file to Device Farm
@@ -72363,7 +72397,8 @@ async function uploadFile(projectArn, fileArn, fileType, testType, pollInterval)
                     createUploadRes = await deviceFarm.send(createUploadCommand);
                     const url = createUploadRes.upload.url;
                     info(`Upload of ${createUploadRes.upload.name} starting...`);
-                    const fileData = await fs$1.readFile(fileArn);
+                    // Read the resolved path that was checked above.
+                    const fileData = await fs$1.readFile(resolvedPath);
                     await axios.put(url, fileData, {
                         headers: { "Content-Type": "application/octet-stream" }
                     });
@@ -72456,19 +72491,19 @@ async function getFolderLookups(runArn) {
     const jobs = await listJobs(runArn);
     const suites = (await Promise.all(jobs.map(job => listSuites(job.arn)))).flat();
     const tests = (await Promise.all(suites.map(suite => listTests(suite.arn)))).flat();
-    const jobLookups = Object.fromEntries(jobs.map(job => [job.arn.split("/")[2], job.name]));
+    const jobLookups = Object.fromEntries(jobs.map(job => [job.arn.split("/")[2], safePathSegment(job.name)]));
     const suiteLookups = Object.fromEntries(suites.map(suite => {
         const suiteSplit = suite.arn.split("/");
         return [
             suiteSplit.slice(2, 4).join("/"),
-            `${jobLookups[suiteSplit[2]]}/${suite.name}`
+            `${jobLookups[suiteSplit[2]]}/${safePathSegment(suite.name)}`
         ]
     }));
     const testLookups = Object.fromEntries(tests.map(test => {
         const testSplit = test.arn.split("/");
         return [
             testSplit.slice(2, 5).join("/"),
-            `${suiteLookups[testSplit.slice(2, 4).join("/")]}/${test.name}`
+            `${suiteLookups[testSplit.slice(2, 4).join("/")]}/${safePathSegment(test.name)}`
         ]
     }));
     return testLookups;
@@ -72503,11 +72538,17 @@ async function downloadArtifact(subFolderLookups, folderName, artifact) {
     const arnSplit = artifact.arn.split("/");
     const subFolder = subFolderLookups[arnSplit.slice(2, 5).join("/")];
     const artifactFolder = `./${folderName}/${subFolder}`;
+    // Use the 4th level ignored above in the filename to be certain the name is unique.
+    const artifactPath = `${artifactFolder}/${safePathSegment(arnSplit[5])}-${safePathSegment(artifact.name)}.${safePathSegment(artifact.extension)}`;
+    // The segments above are sanitised individually, so this should be unreachable. It is kept as a
+    // backstop in case a future change introduces an unsanitised segment.
+    /* v8 ignore next 3 */
+    if (!isWithin(path.resolve(`./${folderName}`), path.resolve(artifactPath))) {
+        throw new Error(`Artifact "${artifact.arn}" resolves outside the artifact folder and will not be downloaded.`);
+    }
     await fs$1.mkdir(artifactFolder, { recursive: true });
     const response = await axios.get(artifact.url, { responseType: "arraybuffer" });
     const fileData = Buffer.from(response.data, "binary");
-    // Use the 4th level ignored above in the filename to be certain the name is unique.
-    const artifactPath = `${artifactFolder}/${arnSplit[5]}-${artifact.name}.${artifact.extension}`;
     info(`Downloading ${artifactPath}...`);
     return fs$1.writeFile(artifactPath, fileData);
 }
