@@ -1,0 +1,23 @@
+version: 2
+updates:
+  # Production dependencies are bundled into dist/ and need a rebuild and a
+  # release to reach users. Development dependencies are never shipped.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      production:
+        dependency-type: production
+      development:
+        dependency-type: development
+
+  # Keeps the SHA-pinned actions in .github/workflows up to date.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
