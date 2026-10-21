@@ -808,6 +808,46 @@ describe("Run", () => {
         expect(core.setFailed).toHaveBeenCalledWith("fake error");
     });
 
+    it("should report the original error if CreateUpload throws", async () => {
+        const INPUTS = {
+            "run-settings-json": `
+                {
+                    "name": "TEST RUN",
+                    "projectArn": "arn:fake-project-arn",
+                    "appArn": "arn:fake-app-arn",
+                    "devicePoolArn": "arn:fake-devicepool-arn",
+                    "test": {
+                        "type": "APPIUM_NODE"
+                    },
+                    "configuration": {
+                        "extraDataPackageArn": "app_resources/external.zip"
+                    }
+                }
+            `,
+            "artifact-types": "",
+            "upload-poll-interval": "0",
+            "run-poll-interval": "0",
+        };
+        core.getInput = vi.fn().mockImplementation(mockGetInput(INPUTS));
+        mock({
+            "app_resources/external.zip": "",
+        });
+        mockDeviceFarm
+            .on(CreateUploadCommand, {
+                projectArn: "arn:fake-project-arn",
+                name: "1_external.zip",
+                type: "EXTERNAL_DATA"
+            })
+            .rejectsOnce(new Error("Rate exceeded"));
+
+        await run();
+
+        expect(mockDeviceFarm).toHaveReceivedCommandWith(CreateUploadCommand, {projectArn: "arn:fake-project-arn", name: "1_external.zip", type: "EXTERNAL_DATA"});
+        expect(axios.put).not.toHaveBeenCalled();
+        expect(core.error).toHaveBeenCalledWith("Upload of 1_external.zip failed: Rate exceeded");
+        expect(core.setFailed).toHaveBeenCalledWith("Rate exceeded");
+    });
+
     it("should fail if upload status is FAILED", async () => {
         const INPUTS = {
             "run-settings-json": `

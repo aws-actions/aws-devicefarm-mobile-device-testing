@@ -216,7 +216,8 @@ async function uploadFile(projectArn, fileArn, fileType, testType, pollInterval)
                     core.info(`Upload of ${createUploadRes.upload.name} complete.`);
                 }
                 catch (error) {
-                    core.error(`Upload of ${createUploadRes.upload.name} failed.`);
+                    // createUploadRes is undefined if CreateUpload itself failed, so use the requested name.
+                    core.error(`Upload of ${createUploadCommand.input.name} failed: ${error.message}`);
                     throw error;
                 }
                 let uploadStatus = { upload: { status: UPLOAD.STATUS.INITIALIZED } };
