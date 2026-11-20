@@ -31,10 +31,10 @@
     "@vitest/coverage-v8": "^5.1.0",
     "aws-sdk-client-mock": "^4.1.0",
     "aws-sdk-client-mock-vitest": "^8.0.0",
-    "eslint": "^10.14.0",
+    "eslint": "^10.15.0",
     "globals": "^17.14.0",
     "mock-fs": "^5.5.0",
-    "rollup": "^4.67.4",
+    "rollup": "^4.68.5",
     "vitest": "^5.0.5"
   }
 }
